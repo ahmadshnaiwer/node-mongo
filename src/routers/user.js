@@ -21,6 +21,17 @@ router.post('/users', async (req, res) => {
     
 })
 
+// Login user
+router.post('/login', async (req, res) => {
+    try {
+        const user = await User.findByCredentials(req.body.email, req.body.password);
+
+        res.send(user);
+    } catch(error) {
+        res.status(400).send();
+    }
+})
+
 // Get all useres
 router.get('/users', async (req, res) => {
 
@@ -67,9 +78,20 @@ router.get('/users/:id', async (req, res) => {
 //Update user by id
 router.patch('/users/:id', async (req, res) => {
     const _id = req.params.id;
+    const updatedUser = req.body;
+    const updatedFields = Object.keys(updatedUser);
+    //To be implemented
+    //Check if the incoming user object fields are valid to be updated
 
     try {
-        const user = await User.findByIdAndUpdate(_id, req.body, {new: true, runValidators: true});
+        const user = await User.findById(_id);
+
+        updatedFields.forEach((field) => {
+            user[field] = updatedUser[field];
+        })
+
+        await user.save();
+        // const user = await User.findByIdAndUpdate(_id, req.body, {new: true, runValidators: true});
         if (!user) {
             return res.status(404).send();
         }
