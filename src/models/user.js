@@ -33,13 +33,19 @@ const userSchema = mongoose.Schema({
                 throw new Error('Email is not vlaid!')
             }
         }
-    }
+    },
+    tokens: [{
+        token: {
+            type: String,
+            required: true
+        }
+    }]
 });
 
 userSchema.pre('save', async function(next) {
     const user = this;
 
-    console.log('middleware here!');
+    // console.log('middleware here!');
     if (user.isModified('password')) {
         user.password = await bcrypt.hash(user.password, 8)
     }
@@ -47,10 +53,13 @@ userSchema.pre('save', async function(next) {
     next();
 });
 
-userSchema.methods.generateAuthToken = function() {
+userSchema.methods.generateAuthToken = async function() {
     const user = this;
     const token = jwt.sign({_id: user._id.toString()}, 'mysecretkey');
 
+    user.tokens = user.tokens.concat({token: token});
+    await user.save();
+    console.log(token);
     return token;
 }
 

@@ -9,7 +9,9 @@ router.post('/users', async (req, res) => {
 
     try {
         await myUser.save();
-        res.status(201).send(myUser);
+        const token = await myUser.generateAuthToken();
+        console.log('201');
+        res.status(201).send({myUser, token});
     } catch (error) {
         res.status(400).send(error);
     }
@@ -26,12 +28,37 @@ router.post('/users', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password);
-        console.log(user);
+        // console.log(user);
         const token = user.generateAuthToken();
 
         res.send({user, token});
     } catch(error) {
         res.status(400).send(error);
+    }
+})
+
+// Logout user
+router.post('/logout', auth, async (req, res) => {
+    try {
+        req.user.tokens = req.user.tokens.filter((token) => {
+            return token.token !== req.token;
+        });
+
+        await req.user.save();
+        res.send();
+    } catch (error) {
+        res.status(500).send();
+    }
+})
+
+// Logout user from all devices
+router.post('/logoutall', auth, async (req, res) => {
+    try {
+        req.user.tokens = [];
+        await req.user.save();
+        res.send('Logout from all devices!');
+    } catch (error) {
+        res.status(500).send();
     }
 })
 
@@ -53,7 +80,7 @@ router.get('/users', auth, async (req, res) => {
 })
 
 // Get user by id
-router.get('/users/:id', async (req, res) => {
+router.get('/users/:id', auth, async (req, res) => {
     const _id = req.params.id;
 
     try {
@@ -79,7 +106,7 @@ router.get('/users/:id', async (req, res) => {
 })
 
 //Update user by id
-router.patch('/users/:id', async (req, res) => {
+router.patch('/users/:id', auth, async (req, res) => {
     const _id = req.params.id;
     const updatedUser = req.body;
     const updatedFields = Object.keys(updatedUser);
@@ -116,7 +143,7 @@ router.patch('/users/:id', async (req, res) => {
 })
 
 //Delete user by id
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', auth, async (req, res) => {
     const _id = req.params.id;
 
     try {
